@@ -1,0 +1,9 @@
+{
+  "name": "hubstaff",
+  "version": "1.0.0",
+  "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, via the official hubstaff CLI",
+  "author": {
+    "name": "Mohamed Nismi"
+  },
+  "repository": "https://github.com/nismi-twire/twire-skills"
+}

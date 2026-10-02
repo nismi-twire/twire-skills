@@ -1,0 +1,16 @@
+{
+  "name": "twire",
+  "owner": {
+    "name": "Mohamed Nismi"
+  },
+  "metadata": {
+    "description": "Claude Code skills for Twire staff"
+  },
+  "plugins": [
+    {
+      "name": "hubstaff",
+      "source": "./plugins/hubstaff",
+      "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, via the official hubstaff CLI"
+    }
+  ]
+}
