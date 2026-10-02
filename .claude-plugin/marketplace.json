@@ -10,7 +10,7 @@
     {
       "name": "hubstaff",
       "source": "./plugins/hubstaff",
-      "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, via the official hubstaff CLI"
+      "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, straight from the Hubstaff API (no extra tools)"
     }
   ]
 }

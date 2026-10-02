@@ -4,7 +4,7 @@ Claude Code skills for Twire staff. Install once, then just ask Claude in plain 
 
 | Skill | What it does |
 |---|---|
-| [`hubstaff`](#hubstaff) | Hours worked today, this week or this month, hours still to work, your leave and leave balance, Sri Lanka holidays, and booking leave. Uses your own Hubstaff account. |
+| [`hubstaff`](#hubstaff) | Hours worked today, this week or this month, hours still to work, your leave and leave balance, Sri Lanka holidays, and booking leave. Uses your own Hubstaff account; no extra tools to install. |
 
 ---
 
@@ -59,24 +59,33 @@ This option has **no automatic updates**. Run `npx skills update` now and then, 
 
 ### First-time setup
 
-1. Install the Hubstaff command-line tool (needs [Homebrew](https://brew.sh)):
+You need [Bun](https://bun.sh) or Node.js 18+ installed. Nothing else: no Homebrew and no Hubstaff command-line tool. (Keep using the Hubstaff desktop app to track your time as usual; that's where the hours come from.)
 
-   ```bash
-   brew install netsoftholdings/tap/hubstaff
-   ```
+1. Ask Claude anything, for example **"How many hours have I worked today?"**
+2. Claude sees you are not connected yet and asks you to:
+   - open https://developer.hubstaff.com/personal_access_tokens,
+   - create a token (any name, for example "Claude"),
+   - click **Copy**, and reply **"done"**.
+3. Claude connects and shows who you are connected as. That's it.
 
-   You also need [Bun](https://bun.sh) or Node.js installed.
+#### Your token never goes into the chat
 
-2. Ask Claude anything, for example **"How many hours have I worked today?"**
+**Do not paste the token into the chat.** You don't need to: the skill reads it **straight from your clipboard**.
 
-3. Claude sees you are not connected yet and walks you through it:
-   - open https://developer.hubstaff.com/personal_access_tokens and create a token,
-   - save it yourself by typing `! hubstaff config set-pat <your token>` in Claude Code,
-   - pick your organization.
+- When you say "done", Claude runs the skill's `login` command. That command takes the token from the clipboard, swaps it with Hubstaff for a login, and saves it to `~/.config/hubstaff-skill/auth.json`, which only your user account can read.
+- The token is never printed, so it never appears in the conversation, your shell history or any settings file.
+- Your clipboard is cleared afterwards.
+- The copied token is used up by that swap, so there is nothing left to keep safe or delete.
 
-   **Never paste your token into the chat.** The `!` in front runs the command on your machine without sending the token to Claude.
+If you paste a token into the chat by mistake, delete it on the Hubstaff page and create a new one.
 
-Each person uses their own token, so Claude only ever sees your own data.
+#### You don't need to log in every day
+
+- Hubstaff logins last 24 hours, and the skill renews them by itself in the background.
+- You only connect again if you **don't use it for 90 days**, or if you delete the token on the Hubstaff site. Claude tells you when that happens.
+- To disconnect, ask Claude to log you out of Hubstaff, or delete the token on the Hubstaff page.
+
+Each person uses their own token, so Claude only ever sees your own Hubstaff data.
 
 ### Things you can ask
 
@@ -107,7 +116,7 @@ You don't need to remember any commands. Ask the way you would ask a colleague:
 
 ### Sample replies
 
-The numbers below are made up, and some replies are shortened.
+The numbers below are made up, and some replies are shortened. A week or less is shown day by day; a month is shown week by week.
 
 **"How many hours have I worked today?"**
 
@@ -130,12 +139,13 @@ The numbers below are made up, and some replies are shortened.
 > - **Full target:** 152h 00m (19 workdays x 8h, weekends and weekday holidays excluded)
 > - **Still to work:** **43h 30m**
 >
-> | Date | Day | Worked | Leave | Target | Difference | Note |
+> | Week | Days | Worked | Leave | Target | Difference | Notes |
 > |---|---|---:|---:|---:|---:|---|
-> | 13 Aug | Thu | 8h 20m | | 8h 00m | +0h 20m | |
-> | 14 Aug | Fri | | 8h 00m | 8h 00m | 0h 00m | Annual leaves |
-> | 15 Aug | Sat | | | | | weekend |
-> | ... | | | | | | |
+> | 1 | 1 to 2 Aug (Sat to Sun) | 0h 00m | | 0h 00m | 0h 00m | |
+> | 2 | 3 to 9 Aug | 40h 10m | | 40h 00m | +0h 10m | |
+> | 3 | 10 to 16 Aug | 30h 50m | 8h 00m | 40h 00m | -1h 10m | |
+> | 4 | 17 to 20 Aug (Mon to Thu) | 25h 30m | | 32h 00m | -6h 30m | |
+> | **Total** | | **96h 30m** | **8h 00m** | **112h 00m** | **-7h 30m** | |
 >
 > **Hours still to work, 43h 30m, spread over the days left (including today):**
 >
@@ -242,8 +252,11 @@ Booking or cancelling leave always shows you a preview first, and Claude waits f
 
 | Problem | Fix |
 |---|---|
-| `hubstaff: command not found` | Run `brew install netsoftholdings/tap/hubstaff` |
-| "session expired" or an auth error | Create a new token and type `! hubstaff config set-pat <token>` |
+| "Not connected to Hubstaff" or "login has expired" | Create a new token, click Copy, and tell Claude "done" |
+| "The clipboard does not hold a Hubstaff token" | You copied something else in between. Click Copy on the token again |
+| "Hubstaff did not accept that token" | Each token works once. Create a new one and copy that |
+| No clipboard (for example a Linux server) | In your own terminal: `HUBSTAFF_TOKEN=<token> bun <skill folder>/scripts/hs.js login` |
+| `bun: command not found` | Install [Bun](https://bun.sh) (or use Node.js 18+) |
 | "no Sri Lanka holiday calendar for 2027" | Update the skill (`/plugin marketplace update twire`). If it is still missing, Claude can download it, but tell the maintainer so it gets added for everyone. |
 | The skill doesn't respond to Hubstaff questions | Type `/reload-plugins`, or restart Claude Code |
 

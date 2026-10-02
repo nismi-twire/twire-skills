@@ -7,10 +7,10 @@ description: Use when the user asks about Hubstaff, tracked hours or time worked
 
 For Twire (Sri Lanka) staff. Everything here is self-contained: the person's identity comes from their own Hubstaff token, so the same skill works for anyone who installs it.
 
-Two layers, both on the official `hubstaff` CLI:
+Everything goes through **`scripts/hs.js`**, which talks to the Hubstaff Public API v2 directly. No Hubstaff CLI or Homebrew is needed, only `bun` (or Node 18+).
 
-1. **`scripts/hs.js`** for anything that needs date maths, summing or a safe write: hours, leave, balance, leave requests.
-2. **Raw `hubstaff` CLI** for everything else (it exposes every public API v2 endpoint).
+1. **Named commands** for anything that needs date maths, summing or a safe write: hours, leave, balance, leave requests.
+2. **`bun $HS api </path>`** for every other endpoint (projects, tasks, screenshots, ...).
 
 ```bash
 HS=<this skill's base directory>/scripts/hs.js
@@ -18,20 +18,32 @@ HS=<this skill's base directory>/scripts/hs.js
 
 Use the base directory Claude Code shows when this skill loads. Do not assume `~/.claude/skills/hubstaff`: installed as a plugin, the skill lives under `~/.claude/plugins/cache/...` instead.
 
-## First-time setup (check before the first command)
+## Connecting to Hubstaff (first time, or when the login expires)
 
-If `hubstaff` is missing or `bun $HS me` fails with an auth error, walk the user through:
+Any command that exits with **code 2** ("Not connected to Hubstaff yet" or "login has expired") means the user has to connect. Walk them through it like this:
 
-1. Install: `brew install netsoftholdings/tap/hubstaff` (needs Homebrew). Runtime: `bun` (or `node`) must be installed.
-2. Token: the user opens https://developer.hubstaff.com/personal_access_tokens, creates a token and copies it (shown once).
-3. The user runs, themselves: `! hubstaff config set-pat <TOKEN>`. Never ask them to paste the token in chat.
-4. Default organization: run `hubstaff -j organizations list`, then `hubstaff config set organization <id>`.
-5. Verify: `hubstaff check` (all OK) and `bun $HS me`.
+1. Tell them, in your own words:
+   - Open https://developer.hubstaff.com/personal_access_tokens, create a token (any name, for example "Claude") and click **Copy**.
+   - **Do not paste it into the chat.** Just reply "done" once it is copied.
+   - Explain why: the skill reads the token **straight from the clipboard**, so it never appears in the conversation, the shell history or any settings file. The clipboard is cleared afterwards.
+2. When they say it is copied, run `bun $HS login` yourself. Never pass a token as an argument, and never run `pbpaste` or anything else that would print the clipboard.
+3. Paste its output. It confirms who they are connected as, where the login is saved, and their organization. If they belong to several organizations, show the list, ask which one, then run `bun $HS org <id>`.
+4. If `login` says the clipboard does not hold a token, they probably copied something else since; ask them to click Copy again. If Hubstaff rejects the token, it was already used or deleted; they create a new one.
+
+**If the user pastes a token into the chat anyway:** do not use it. Tell them to delete that token on the Hubstaff page (it is now in the conversation), create a new one and copy it instead.
+
+How the login works, if they ask:
+
+- The token is exchanged once for a login that is saved in `~/.config/hubstaff-skill/auth.json`, readable only by them. The copied token itself is used up by that exchange.
+- It renews itself every day in the background. They only connect again after **90 days without using it**, or if they delete the token on the Hubstaff site.
+- `bun $HS logout` forgets the login. Deleting the token on the Hubstaff page revokes it.
+- Fallback when there is no clipboard (for example a Linux server): `HUBSTAFF_TOKEN=<token> bun $HS login`, typed by the user in their own terminal, not through Claude.
 
 ## Quick reference (hs.js)
 
 | Question | Command |
 |---|---|
+| Connect / switch organization / who am I | `bun $HS login` · `org [id]` · `me` |
 | Hours this week / month / year | `bun $HS hours week` · `month` · `year` |
 | Hours for a past period | `bun $HS hours last-week` · `last-month` · `--from 2026-07-01 --to 2026-09-30` |
 | My leave requests | `bun $HS leave` (this year) · `--all` · `--year 2025` · `--status pending` · `--upcoming` |
@@ -42,6 +54,7 @@ If `hubstaff` is missing or `bun $HS me` fails with an auth error, walk the user
 | Partial day | add `--half`, or `--hours 2 --start 14:00` (single day only) |
 | Withdraw a pending request | `bun $HS leave-cancel <id>` |
 | Raw JSON from a read command | add `--json` |
+| Any other endpoint | `bun $HS api /organizations/{org}/projects --status active` |
 
 Weeks start Monday. Dates are YYYY-MM-DD, inclusive.
 
@@ -55,7 +68,7 @@ Weeks start Monday. Dates are YYYY-MM-DD, inclusive.
 - **Dates** are human: `Wed 30 Sep`, `1 to 4 Sep`, `19, 20 and 26 Sep`, not ISO, unless the user asks for ISO.
 - No long prose paragraphs, and no em dashes.
 
-Every `hs.js` read command already prints markdown in this style: **paste its stdout verbatim**, then add at most one or two sentences of your own if something needs saying. For raw `hubstaff` CLI results, build the same layout yourself: a bullet summary first, then a table.
+Every `hs.js` read command already prints markdown in this style: **paste its stdout verbatim**, then add at most one or two sentences of your own if something needs saying. For `api` results (raw JSON), build the same layout yourself: a bullet summary first, then a table.
 
 ## Reporting hours
 
@@ -100,16 +113,17 @@ Policy names are ambiguous ("annual" matches paid and unpaid); when the user has
 - A request's `paid` field is payroll payout state, not paid leave. Use the policy name.
 - Days follow the organization's timezone, so late-night work can land on the next date.
 
-## Raw CLI for everything else
+## Any other endpoint: `api`
 
 ```bash
-hubstaff list | grep -i <topic>          # find the command
-hubstaff <command> --help                # flags for one command
-hubstaff -j <command> ...                # minified JSON
+bun $HS api /organizations/{org}/projects --status active
+bun $HS api /organizations/{org}/activities/daily '--date[start]' 2026-10-01 '--date[stop]' 2026-10-02 --user_ids 123
+bun $HS api /projects/456
 ```
 
+- Endpoint reference: https://developer.hubstaff.com/docs/hubstaff_v2 (paths there start with `/v2`; leave that off).
+- `{org}` is replaced with the user's saved organization id. Flags become query parameters; `*_ids` values take a comma list.
 - **Quote bracket flags** in zsh or it errors with `no matches found`: `'--date[start]' 2026-10-01`.
-- Range endpoints (`activities daily`) cap at 31 days; list endpoints page with `--page_limit 500 --page_start_id <next>`.
-- Durations are seconds. The user id is in `bun $HS me`; the organization id is the CLI default.
-- Exit code 2 means the session expired: the user creates a new token and runs `! hubstaff config set-pat <TOKEN>`.
-- For any raw write (`create`, `update`, `delete`), show the user what will be sent and get a yes first.
+- Range endpoints (`activities/daily`) cap at 31 days; list endpoints page with `--page_limit 500 --page_start_id <next>`.
+- Durations are seconds. The user id is in `bun $HS me`.
+- Writes (`--method POST|PUT|PATCH|DELETE --body '{...}'`) only print what would be sent until `--confirm` is added. Show that preview to the user and get a yes first, exactly as for leave requests.

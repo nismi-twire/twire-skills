@@ -1,7 +1,7 @@
 {
   "name": "hubstaff",
-  "version": "1.0.0",
-  "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, via the official hubstaff CLI",
+  "version": "1.1.0",
+  "description": "Hubstaff hours, leave and balance, Sri Lanka holidays and hours left to work, straight from the Hubstaff API (no extra tools)",
   "author": {
     "name": "Mohamed Nismi"
   },
