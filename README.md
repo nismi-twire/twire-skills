@@ -6,6 +6,8 @@ Claude Code skills for Twire staff. Install once, then ask Claude in plain Engli
 |---|---|
 | **hubstaff** | Your hours, hours left to work, leave, leave balance and Sri Lanka holidays. Books leave too. |
 
+**Extra:** [HubstaffBar](widgets/hubstaff-bar/), a macOS menu bar widget that keeps your hours always visible and alerts you when you're behind for the day.
+
 **Contents:** [Quick start](#quick-start) · [What you can ask](#what-you-can-ask) · [Sample replies](#sample-replies) · [How the target works](#how-the-target-works) · [Holidays 2026](#sri-lanka-holidays-2026) · [Troubleshooting](#troubleshooting)
 
 ---
